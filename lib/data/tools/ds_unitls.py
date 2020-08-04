@@ -892,15 +892,13 @@ def create_folder(path='./new_folder'):
     os.makedirs(path)  # make new output folder
 
 
-def run_wbf(boxes, scores, image_size=1023, iou_thr=0.5, skip_box_thr=0.7, weights=None):
-    #boxes = [prediction[image_index]['boxes'].data.cpu().numpy()/(image_size-1) for prediction in predictions]
-    #scores = [prediction[image_index]['scores'].data.cpu().numpy() for prediction in predictions]
+def run_wbf(boxes, scores, image_size=1024, iou_thr=0.5, skip_box_thr=0.7, weights=None):
     labels = [np.zeros(score.shape[0]) for score in scores]
     boxes = [box/(image_size) for box in boxes]
     boxes, scores, labels = weighted_boxes_fusion(boxes, scores, labels, weights=None, iou_thr=iou_thr, skip_box_thr=skip_box_thr)
-    #boxes, scores, labels = nms(boxes, scores, labels, weights=[1,1,1,1,1], iou_thr=0.5)
     boxes = boxes*(image_size)
     return boxes, scores, labels
+
 
 
 def rccndataset(train_dir, save_dir):
