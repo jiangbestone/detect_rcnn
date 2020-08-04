@@ -170,9 +170,6 @@ def train():
     optimizer = optim.SGD(pg0, lr=param['init_lr'], momentum=param['momentum'], nesterov=True)
     optimizer.add_param_group({'params': pg1, 'weight_decay': param['weight_decay']})  # add pg1 with weight_decay
     optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
-
-    lf = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.9 + 0.1  # cosine
-    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     print('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
     del pg0, pg1, pg2
 
@@ -215,7 +212,8 @@ def train():
     if mixed_precision:
         model, optimizer = amp.initialize(model, optimizer, opt_level='O1', verbosity=0)
 
-
+    lf = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.9 + 0.1  # cosine
+    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     scheduler.last_epoch = start_epoch - 1  # do not move
 
 
@@ -269,7 +267,7 @@ def train():
     print('Using %g dataloader workers' % dataloader.num_workers)
     print('Starting training for %g epochs...' % epochs)
     # torch.autograd.set_detect_anomaly(True)
-    for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
+    for epoch in range(start_epoch, start_epoch + epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
         # Update image weights (optional)
@@ -380,7 +378,7 @@ def train():
             ckpt = {'epoch': epoch,
                     'best_fitness': best_fitness,
                     'training_results': f.read(),
-                    'model': ema.ema,
+                    'model': ema.ema.module if hasattr(model, 'module') else ema.ema,
                     'optimizer': None if final_epoch else optimizer.state_dict()}
 
         # Save last, best and delete
