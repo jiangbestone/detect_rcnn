@@ -37,6 +37,8 @@ def parse_args():
     parser.add_argument('--save', type=str,
                         default='',
                         help='*dataset.yml')
+    parser.add_argument('--name', default='',
+                        help='renames results.txt to results_name.txt if supplied')
     parser.add_argument('--cuda', dest='cuda',
                         help='whether use CUDA',
                         action='store_true')
