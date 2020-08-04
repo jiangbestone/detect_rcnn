@@ -396,7 +396,7 @@ def train():
             os.rename(f1, f2)  # rename
             ispt = f2.endswith('.pt')  # is *.pt
             strip_optimizer(f2) if ispt else None  # strip optimizer
-            os.system('gsutil cp %s gs://%s/weights' % (f2, opt.bucket)) if opt.bucket and ispt else None  # upload
+            os.system('gsutil cp %s gs://%s/weights' % (f2, bucket)) if bucket and ispt else None  # upload
 
     # Finish
     if not opt.evolve:
@@ -412,6 +412,7 @@ if __name__ == '__main__':
     opt = parse_args()
     ress = False
     name = ''
+    bucket = ''
     opt.weights = last if ress and not opt.weights else opt.weights
     opt.net = check_file(opt.net)  # check file
     opt.cfgs = check_file(opt.cfgs)  # check file
