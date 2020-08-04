@@ -183,23 +183,20 @@ class Model(nn.Module):
         if type(model_cfg) is dict:
             self.md = model_cfg
         else:
-            import yaml
+
             with open(model_cfg) as f:
                 self.md = yaml.load(f, Loader=yaml.FullLoader)
 
-        if nc and nc != self.md['nc']:
-            print('Overriding %s nc=%g with nc=%g' % (model_cfg, self.md['nc'], nc))
+        if nc:
             self.md['nc'] = nc
         self.model, self.save = BasicBlock(self.md, ch=[ch])
+        m.anchors /= m.stride.view(-1, 1, 1)
+        check_anchor_order(m)
+        self.stride = m.stride
 
-        m = self.model[-1]
-        if isinstance(m, Detect):
-            s = 128
-            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])
-            m.anchors /= m.stride.view(-1, 1, 1)
-            check_anchor_order(m)
-            self.stride = m.stride
-            self._initialize_biases()
+
+        m = self.model[-1]  # Detect()
+        m.stride = torch.tensor([128 / x.shape[-2] for x in self.forward(torch.zeros(1, ch, 128, 128))])  # forward
 
         torch_utils.initialize_weights(self)
         self._initialize_biases()
@@ -212,14 +209,23 @@ class Model(nn.Module):
             s = [0.83, 0.67]
             y = []
             for i, xi in enumerate((x,
-                                    torch_utils.scale_img(x.flip(3), s[0]),
-                                    torch_utils.scale_img(x, s[1]),
+                                    torch_utils.scale_img(x.flip(3), s[0]),  # flip-lr and scale
+                                    torch_utils.scale_img(x, s[1]),  # scale
+                                    x.flip(3), # only flip-lr
+                                    torch_utils.scale_img(x.flip(2), s[0]),  # flip-ud and scale
+                                    x.flip(2),  # only flip-lr
                                     )):
                 y.append(self.forward_once(xi)[0])
-
             y[1][..., :4] /= s[0]  # scale
             y[1][..., 0] = img_size[1] - y[1][..., 0]  # flip lr
             y[2][..., :4] /= s[1]  # scale
+            #
+            y[3][..., 0] = img_size[1] - y[3][..., 0]  # flip lr
+            #
+            y[4][..., :4] /= s[0]  # scale
+            y[4][..., 1] = img_size[0] - y[4][..., 1]  # flip ud
+            #
+            y[5][..., 1] = img_size[0] - y[5][..., 1]  # flip ud
             return torch.cat(y, 1), None
         else:
             return self.forward_once(x, profile)
@@ -290,11 +296,11 @@ def BasicBlock(runwget, ch):
                 pass
 
         n = max(round(n * gd), 1) if n > 1 else n  # depth gain
-        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, CrossConv, BottleneckCSP, C3]:
+        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP]:
             c1, c2 = ch[f], args[0]
             c2 = make_divisible(c2 * gw, 8) if c2 != no else c2
             args = [c1, c2, *args[1:]]
-            if m in [BottleneckCSP, C3]:
+            if m in [BottleneckCSP]:
                 args.insert(2, n)
                 n = 1
         elif m is nn.BatchNorm2d:

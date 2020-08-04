@@ -166,6 +166,16 @@ class CrossConv(nn.Module):
     def forward(self, x):
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
+class ConvPlus(nn.Module):
+    # Plus-shaped convolution
+    def __init__(self, c1, c2, k=3, s=1, g=1, bias=True):  # ch_in, ch_out, kernel, stride, groups
+        super(ConvPlus, self).__init__()
+        self.cv1 = nn.Conv2d(c1, c2, (k, 1), s, (k // 2, 0), groups=g, bias=bias)
+        self.cv2 = nn.Conv2d(c1, c2, (1, k), s, (0, k // 2), groups=g, bias=bias)
+
+    def forward(self, x):
+        return self.cv1(x) + self.cv2(x)
+
 
 class C3(nn.Module):
     # Cross Convolution CSP
