@@ -1,6 +1,6 @@
 
-train: ..\convertor\fold0\images\train2017\
-val: ..\convertor\fold0\images\val2017\
+train: ./convertor/fold0/images/train2017/
+val: ./convertor/fold0/images/val2017/
 
 nc: 1
 
