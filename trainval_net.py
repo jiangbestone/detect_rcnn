@@ -56,6 +56,8 @@ def parse_args():
     parser.add_argument('--cag', dest='class_agnostic',
                         help='whether to perform class_agnostic bbox regression',
                         action='store_true')
+    parser.add_argument('--evolve', action='store_true',
+                        help='evolve hyperparameters')
     parser.add_argument('--device', default='',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     args = parser.parse_args()
